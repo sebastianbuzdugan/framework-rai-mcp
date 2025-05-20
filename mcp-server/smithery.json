@@ -1,0 +1,121 @@
+{
+  "name": "framework-rai",
+  "version": "1.0.2",
+  "description": "Responsible AI framework for project analysis and documentation",
+  "author": "Sebastian Buzdugan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sebastianbuzdugan/framework-rai-mcp"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "auth": {
+    "type": "api_key",
+    "env_var": "OPENAI_API_KEY",
+    "description": "OpenAI API key required for AI-powered suggestions and analysis"
+  },
+  "functions": [
+    {
+      "name": "scanProject",
+      "description": "Scan project for AI components",
+      "endpoint": "/mcp/scan-project",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectPath": {
+            "type": "string",
+            "description": "Path to the project to scan"
+          }
+        }
+      }
+    },
+    {
+      "name": "generateSuggestions",
+      "description": "Generate responsible AI suggestions based on project code",
+      "endpoint": "/mcp/generate-suggestions",
+      "requires_auth": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "projectPath": {
+            "type": "string",
+            "description": "Path to the project"
+          },
+          "codeSnippets": {
+            "type": "array",
+            "description": "Optional code snippets to analyze",
+            "items": {
+              "type": "object",
+              "properties": {
+                "file": { "type": "string" },
+                "content": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "analyzeModel",
+      "description": "Analyze a model file for potential issues",
+      "endpoint": "/mcp/analyze-model",
+      "requires_auth": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "modelFile": {
+            "type": "string",
+            "description": "Path to the model file or model content"
+          },
+          "modelType": {
+            "type": "string",
+            "description": "Type of model (optional)"
+          }
+        }
+      }
+    },
+    {
+      "name": "getDocumentation",
+      "description": "Get responsible AI documentation",
+      "endpoint": "/mcp/get-documentation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Documentation type (checklist, model_card, risk_file)"
+          },
+          "projectPath": {
+            "type": "string",
+            "description": "Path to the project"
+          }
+        }
+      }
+    },
+    {
+      "name": "updateDocumentation",
+      "description": "Update responsible AI documentation",
+      "endpoint": "/mcp/update-documentation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Documentation type (checklist, model_card, risk_file)"
+          },
+          "content": {
+            "type": "string",
+            "description": "Documentation content"
+          },
+          "projectPath": {
+            "type": "string",
+            "description": "Path to the project"
+          }
+        }
+      }
+    }
+  ]
+} 

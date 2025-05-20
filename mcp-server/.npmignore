@@ -1,0 +1,27 @@
+# Development files
+node_modules/
+.env
+.env.example
+.git
+.gitignore
+.DS_Store
+
+# Test files
+*-test.js
+test-docs/
+test/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation files that shouldn't be included in the package
+docs/
+CONTRIBUTING.md 
