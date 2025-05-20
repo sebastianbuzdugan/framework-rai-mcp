@@ -1,6 +1,6 @@
 {
   "name": "framework-rai-mcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Model Context Protocol server for Framework-RAI with smart project analysis",
   "main": "index.js",
   "bin": {
