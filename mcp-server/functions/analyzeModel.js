@@ -1,16 +1,16 @@
 const fs = require('fs-extra');
 const { OpenAI } = require('openai');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 /**
  * Analyze model for potential issues
  */
 async function analyzeModel(modelFile, modelType) {
   try {
+    // Initialize OpenAI with the current API key
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+    
     let fileContent;
     
     if (typeof modelFile === 'string' && await fs.pathExists(modelFile)) {
@@ -43,6 +43,17 @@ async function analyzeModel(modelFile, modelType) {
         "testing_validation": "Testing and validation suggestions..."
       }
     `;
+    
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('No OpenAI API key provided. Returning mock analysis.');
+      return {
+        biases: "Mock analysis: This model might have bias issues due to training data limitations.",
+        documentation: "Mock analysis: The model lacks proper documentation about its limitations and intended use.",
+        security_privacy: "Mock analysis: Consider implementing data anonymization and access controls.",
+        testing_validation: "Mock analysis: Implement comprehensive testing across different scenarios."
+      };
+    }
     
     // Call OpenAI API
     const response = await openai.chat.completions.create({

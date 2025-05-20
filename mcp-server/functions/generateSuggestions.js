@@ -3,16 +3,16 @@ const path = require('path');
 const { OpenAI } = require('openai');
 const { scanProject } = require('./scanProject');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 /**
  * Generate suggestions based on project code
  */
 async function generateSuggestions(projectPath, codeSnippets) {
   try {
+    // Initialize OpenAI with the current API key
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+    
     projectPath = projectPath || process.cwd();
     
     // If no code snippets provided, scan project for AI components
@@ -61,6 +61,17 @@ async function generateSuggestions(projectPath, codeSnippets) {
         "testing_monitoring": ["suggestion 1", "suggestion 2"]
       }
     `;
+    
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('No OpenAI API key provided. Returning mock suggestions.');
+      return {
+        bias_fairness: ["Mock suggestion: Consider implementing bias detection methods", "Mock suggestion: Ensure diverse training data"],
+        transparency: ["Mock suggestion: Add model documentation", "Mock suggestion: Implement explainability features"],
+        privacy_security: ["Mock suggestion: Implement data anonymization", "Mock suggestion: Add access controls"],
+        testing_monitoring: ["Mock suggestion: Create comprehensive test suite", "Mock suggestion: Implement monitoring dashboard"]
+      };
+    }
     
     // Call OpenAI API
     const response = await openai.chat.completions.create({
