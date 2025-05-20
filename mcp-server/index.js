@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
+const { v4: uuidv4 } = require('uuid');
+const { EventEmitter } = require('events');
 
 // Load environment variables
 dotenv.config();
@@ -19,321 +21,281 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Handle Smithery configuration
-app.use('/mcp', (req, res, next) => {
-  if (req.query.config) {
-    try {
-      // Decode base64 config
-      const configStr = Buffer.from(req.query.config, 'base64').toString();
-      const config = JSON.parse(configStr);
-      
-      // Apply configuration
-      if (config.OPENAI_API_KEY) {
-        process.env.OPENAI_API_KEY = config.OPENAI_API_KEY;
+// Session storage
+const sessions = new Map();
+
+// MCP JSON-RPC endpoint
+app.post('/mcp', async (req, res) => {
+  const { jsonrpc, id, method, params } = req.body;
+  
+  if (jsonrpc !== '2.0') {
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      id,
+      error: {
+        code: -32600,
+        message: 'Invalid Request',
+        data: 'Expected JSON-RPC 2.0'
+      }
+    });
+  }
+  
+  console.log(`Received method: ${method}`);
+  
+  try {
+    // Handle different JSON-RPC methods
+    switch (method) {
+      case 'initialize': {
+        // Create a new session
+        const sessionId = uuidv4();
+        const emitter = new EventEmitter();
+        
+        // Store session config
+        const config = params?.config || {};
+        if (config.OPENAI_API_KEY) {
+          process.env.OPENAI_API_KEY = config.OPENAI_API_KEY;
+        }
+        
+        sessions.set(sessionId, { 
+          config, 
+          emitter,
+          createdAt: Date.now()
+        });
+        
+        return res.json({
+          jsonrpc: '2.0',
+          id,
+          result: {
+            session_id: sessionId,
+            capabilities: {
+              streaming: false
+            }
+          }
+        });
       }
       
-      console.log('Received configuration from Smithery');
-    } catch (error) {
-      console.error('Error parsing configuration:', error);
-    }
-  }
-  next();
-});
-
-// MCP Protocol endpoints
-app.post('/mcp/scan-project', async (req, res) => {
-  try {
-    const { projectPath } = req.body;
-    const result = await scanProject(projectPath);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/mcp/generate-suggestions', async (req, res) => {
-  try {
-    const { projectPath, codeSnippets } = req.body;
-    const result = await generateSuggestions(projectPath, codeSnippets);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/mcp/analyze-model', async (req, res) => {
-  try {
-    const { modelFile, modelType } = req.body;
-    const result = await analyzeModel(modelFile, modelType);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/mcp/get-documentation', async (req, res) => {
-  try {
-    const { type, projectPath } = req.body;
-    const result = await getDocumentation(type, projectPath);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/mcp/update-documentation', async (req, res) => {
-  try {
-    const { type, content, projectPath } = req.body;
-    const result = await updateDocumentation(type, content, projectPath);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// MCP manifest endpoint
-app.get('/mcp/manifest', (req, res) => {
-  res.json({
-    name: 'framework-rai',
-    version: '1.0.2',
-    description: 'Responsible AI framework for project analysis and documentation',
-    functions: [
-      {
-        name: 'scanProject',
-        description: 'Scan project for AI components',
-        parameters: {
-          type: 'object',
-          properties: {
-            projectPath: {
-              type: 'string',
-              description: 'Path to the project to scan'
+      case 'tools/list': {
+        const { session_id } = params;
+        if (!sessions.has(session_id)) {
+          return res.status(400).json({
+            jsonrpc: '2.0',
+            id,
+            error: {
+              code: -32602,
+              message: 'Invalid params',
+              data: 'Invalid session_id'
             }
-          }
+          });
         }
-      },
-      {
-        name: 'generateSuggestions',
-        description: 'Generate responsible AI suggestions based on project code',
-        parameters: {
-          type: 'object',
-          properties: {
-            projectPath: {
-              type: 'string',
-              description: 'Path to the project'
-            },
-            codeSnippets: {
-              type: 'array',
-              description: 'Optional code snippets to analyze',
-              items: {
-                type: 'object',
-                properties: {
-                  file: { type: 'string' },
-                  content: { type: 'string' }
+        
+        return res.json({
+          jsonrpc: '2.0',
+          id,
+          result: {
+            tools: [
+              {
+                name: 'scanProject',
+                description: 'Scan project for AI components',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    projectPath: {
+                      type: 'string',
+                      description: 'Path to the project to scan'
+                    }
+                  }
                 }
-              }
-            }
-          }
-        }
-      },
-      {
-        name: 'analyzeModel',
-        description: 'Analyze a model file for potential issues',
-        parameters: {
-          type: 'object',
-          properties: {
-            modelFile: {
-              type: 'string',
-              description: 'Path to the model file or model content'
-            },
-            modelType: {
-              type: 'string',
-              description: 'Type of model (optional)'
-            }
-          }
-        }
-      },
-      {
-        name: 'getDocumentation',
-        description: 'Get responsible AI documentation',
-        parameters: {
-          type: 'object',
-          properties: {
-            type: {
-              type: 'string',
-              description: 'Documentation type (checklist, model_card, risk_file)'
-            },
-            projectPath: {
-              type: 'string',
-              description: 'Path to the project'
-            }
-          }
-        }
-      },
-      {
-        name: 'updateDocumentation',
-        description: 'Update responsible AI documentation',
-        parameters: {
-          type: 'object',
-          properties: {
-            type: {
-              type: 'string',
-              description: 'Documentation type (checklist, model_card, risk_file)'
-            },
-            content: {
-              type: 'string',
-              description: 'Documentation content'
-            },
-            projectPath: {
-              type: 'string',
-              description: 'Path to the project'
-            }
-          }
-        }
-      }
-    ]
-  });
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Framework-RAI MCP server running on port ${PORT}`);
-});
-
-// Unified MCP endpoint for Smithery
-app.all('/mcp', async (req, res) => {
-  try {
-    // GET request for manifest
-    if (req.method === 'GET') {
-      return res.json({
-        name: 'framework-rai',
-        version: '1.0.2',
-        description: 'Responsible AI framework for project analysis and documentation',
-        functions: [
-          {
-            name: 'scanProject',
-            description: 'Scan project for AI components',
-            parameters: {
-              type: 'object',
-              properties: {
-                projectPath: {
-                  type: 'string',
-                  description: 'Path to the project to scan'
+              },
+              {
+                name: 'generateSuggestions',
+                description: 'Generate responsible AI suggestions based on project code',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    projectPath: {
+                      type: 'string',
+                      description: 'Path to the project'
+                    },
+                    codeSnippets: {
+                      type: 'array',
+                      description: 'Optional code snippets to analyze',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          file: { type: 'string' },
+                          content: { type: 'string' }
+                        }
+                      }
+                    }
+                  }
                 }
-              }
-            }
-          },
-          {
-            name: 'generateSuggestions',
-            description: 'Generate responsible AI suggestions based on project code',
-            parameters: {
-              type: 'object',
-              properties: {
-                projectPath: {
-                  type: 'string',
-                  description: 'Path to the project'
-                },
-                codeSnippets: {
-                  type: 'array',
-                  description: 'Optional code snippets to analyze',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      file: { type: 'string' },
-                      content: { type: 'string' }
+              },
+              {
+                name: 'analyzeModel',
+                description: 'Analyze a model file for potential issues',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    modelFile: {
+                      type: 'string',
+                      description: 'Path to the model file or model content'
+                    },
+                    modelType: {
+                      type: 'string',
+                      description: 'Type of model (optional)'
+                    }
+                  }
+                }
+              },
+              {
+                name: 'getDocumentation',
+                description: 'Get responsible AI documentation',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    type: {
+                      type: 'string',
+                      description: 'Documentation type (checklist, model_card, risk_file)'
+                    },
+                    projectPath: {
+                      type: 'string',
+                      description: 'Path to the project'
+                    }
+                  }
+                }
+              },
+              {
+                name: 'updateDocumentation',
+                description: 'Update responsible AI documentation',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    type: {
+                      type: 'string',
+                      description: 'Documentation type (checklist, model_card, risk_file)'
+                    },
+                    content: {
+                      type: 'string',
+                      description: 'Documentation content'
+                    },
+                    projectPath: {
+                      type: 'string',
+                      description: 'Path to the project'
                     }
                   }
                 }
               }
-            }
-          },
-          {
-            name: 'analyzeModel',
-            description: 'Analyze a model file for potential issues',
-            parameters: {
-              type: 'object',
-              properties: {
-                modelFile: {
-                  type: 'string',
-                  description: 'Path to the model file or model content'
-                },
-                modelType: {
-                  type: 'string',
-                  description: 'Type of model (optional)'
-                }
-              }
-            }
-          },
-          {
-            name: 'getDocumentation',
-            description: 'Get responsible AI documentation',
-            parameters: {
-              type: 'object',
-              properties: {
-                type: {
-                  type: 'string',
-                  description: 'Documentation type (checklist, model_card, risk_file)'
-                },
-                projectPath: {
-                  type: 'string',
-                  description: 'Path to the project'
-                }
-              }
-            }
-          },
-          {
-            name: 'updateDocumentation',
-            description: 'Update responsible AI documentation',
-            parameters: {
-              type: 'object',
-              properties: {
-                type: {
-                  type: 'string',
-                  description: 'Documentation type (checklist, model_card, risk_file)'
-                },
-                content: {
-                  type: 'string',
-                  description: 'Documentation content'
-                },
-                projectPath: {
-                  type: 'string',
-                  description: 'Path to the project'
-                }
-              }
-            }
+            ]
           }
-        ]
-      });
-    }
-    
-    // POST request for function calls
-    if (req.method === 'POST') {
-      const { function: functionName, parameters } = req.body;
-      
-      switch (functionName) {
-        case 'scanProject':
-          return res.json(await scanProject(parameters.projectPath));
-          
-        case 'generateSuggestions':
-          return res.json(await generateSuggestions(parameters.projectPath, parameters.codeSnippets));
-          
-        case 'analyzeModel':
-          return res.json(await analyzeModel(parameters.modelFile, parameters.modelType));
-          
-        case 'getDocumentation':
-          return res.json(await getDocumentation(parameters.type, parameters.projectPath));
-          
-        case 'updateDocumentation':
-          return res.json(await updateDocumentation(parameters.type, parameters.content, parameters.projectPath));
-          
-        default:
-          return res.status(400).json({ error: `Unknown function: ${functionName}` });
+        });
       }
+      
+      case 'tools/call': {
+        const { session_id, tool, parameters } = params;
+        if (!sessions.has(session_id)) {
+          return res.status(400).json({
+            jsonrpc: '2.0',
+            id,
+            error: {
+              code: -32602,
+              message: 'Invalid params',
+              data: 'Invalid session_id'
+            }
+          });
+        }
+        
+        let result;
+        
+        switch (tool) {
+          case 'scanProject':
+            result = await scanProject(parameters.projectPath);
+            break;
+            
+          case 'generateSuggestions':
+            result = await generateSuggestions(parameters.projectPath, parameters.codeSnippets);
+            break;
+            
+          case 'analyzeModel':
+            result = await analyzeModel(parameters.modelFile, parameters.modelType);
+            break;
+            
+          case 'getDocumentation':
+            result = await getDocumentation(parameters.type, parameters.projectPath);
+            break;
+            
+          case 'updateDocumentation':
+            result = await updateDocumentation(parameters.type, parameters.content, parameters.projectPath);
+            break;
+            
+          default:
+            return res.status(400).json({
+              jsonrpc: '2.0',
+              id,
+              error: {
+                code: -32601,
+                message: 'Method not found',
+                data: `Tool '${tool}' not found`
+              }
+            });
+        }
+        
+        return res.json({
+          jsonrpc: '2.0',
+          id,
+          result
+        });
+      }
+      
+      case 'shutdown': {
+        const { session_id } = params;
+        if (sessions.has(session_id)) {
+          sessions.delete(session_id);
+        }
+        
+        return res.json({
+          jsonrpc: '2.0',
+          id,
+          result: null
+        });
+      }
+      
+      default:
+        return res.status(400).json({
+          jsonrpc: '2.0',
+          id,
+          error: {
+            code: -32601,
+            message: 'Method not found',
+            data: `Method '${method}' not found`
+          }
+        });
     }
-    
-    // Method not supported
-    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('Error handling MCP request:', error);
-    return res.status(500).json({ error: error.message });
+    console.error(`Error handling method ${method}:`, error);
+    return res.status(500).json({
+      jsonrpc: '2.0',
+      id,
+      error: {
+        code: -32000,
+        message: 'Server error',
+        data: error.message
+      }
+    });
   }
+});
+
+// Cleanup old sessions periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [sessionId, session] of sessions.entries()) {
+    // Remove sessions older than 2 hours
+    if (now - session.createdAt > 2 * 60 * 60 * 1000) {
+      sessions.delete(sessionId);
+    }
+  }
+}, 30 * 60 * 1000); // Run every 30 minutes
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Framework-RAI MCP server running on port ${PORT}`);
 }); 
