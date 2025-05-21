@@ -16,7 +16,7 @@ A Model Context Protocol (MCP) server for responsible AI development and documen
 If you're using Cursor or another Smithery-compatible client, you can install this package directly:
 
 ```bash
-npx -y @smithery/cli@latest install framework-rai-mcp --client cursor
+npx -y @smithery/cli@latest inspect @sebastianbuzdugan/framework-rai-mcp
 ```
 
 When prompted by Smithery, you'll need to provide your OpenAI API key to use the AI-powered features.
@@ -27,6 +27,14 @@ You can also install the package globally:
 
 ```bash
 npm install -g framework-rai-mcp
+```
+
+Or install locally for development:
+
+```bash
+git clone https://github.com/sebastianbuzdugan/framework-rai-mcp.git
+cd framework-rai-mcp
+npm install
 ```
 
 ## Usage
@@ -69,16 +77,32 @@ The AI-powered features require an OpenAI API key. You can provide it in several
    OPENAI_API_KEY=sk-your-openai-key
    ```
 
-### API Endpoints
+### JSON-RPC API
 
-The server exposes the following MCP protocol endpoints:
+The server implements the Model Context Protocol (MCP) using JSON-RPC 2.0 at the `/mcp` endpoint. The following methods are available:
 
-- `GET /mcp/manifest`: Get the MCP manifest with available functions
-- `POST /mcp/scan-project`: Scan a project for AI components
-- `POST /mcp/generate-suggestions`: Generate responsible AI suggestions (requires OpenAI API key)
-- `POST /mcp/analyze-model`: Analyze a model file for potential issues (requires OpenAI API key)
-- `POST /mcp/get-documentation`: Get responsible AI documentation
-- `POST /mcp/update-documentation`: Update responsible AI documentation
+- `initialize`: Initialize a session with the server
+- `tools/list`: List available tools
+- `tools/call`: Call a specific tool with parameters
+- `shutdown`: Terminate a session
+
+### Available Tools
+
+- `scanProject`: Scan a project for AI components
+- `generateSuggestions`: Generate responsible AI suggestions (requires OpenAI API key)
+- `analyzeModel`: Analyze a model file for potential issues (requires OpenAI API key)
+- `getDocumentation`: Get responsible AI documentation
+- `updateDocumentation`: Update responsible AI documentation
+
+### Testing the Server
+
+You can test the server using the included test script:
+
+```bash
+npm run mcp-test
+```
+
+This will send test requests to the server and display the responses.
 
 ## Environment Variables
 

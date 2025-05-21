@@ -30,8 +30,15 @@ Description:
   This command starts the Framework-RAI MCP server, which provides
   responsible AI analysis and documentation tools for your projects.
   
-  The server exposes MCP protocol endpoints that can be used by
-  Smithery-compatible clients like Cursor.
+  The server implements the Model Context Protocol (MCP) using JSON-RPC 2.0
+  at the /mcp endpoint and can be used by Smithery-compatible clients like Cursor.
+  
+Available Tools:
+  - scanProject: Scan a project for AI components
+  - generateSuggestions: Generate responsible AI suggestions
+  - analyzeModel: Analyze a model file for potential issues
+  - getDocumentation: Get responsible AI documentation
+  - updateDocumentation: Update responsible AI documentation
   `);
   process.exit(0);
 }
@@ -59,6 +66,7 @@ if (!process.env.OPENAI_API_KEY) {
 
 // Start the server
 console.log(`Starting Framework-RAI MCP server on port ${port}...`);
+console.log(`Server will be available at http://localhost:${port}/mcp`);
 console.log('Press Ctrl+C to stop the server');
 
 const server = spawn('node', [serverPath], {

@@ -1,7 +1,7 @@
 {
   "name": "framework-rai-mcp",
-  "version": "1.0.5",
-  "description": "Model Context Protocol server for Framework-RAI with smart project analysis",
+  "version": "1.1.0",
+  "description": "Model Context Protocol server for Framework-RAI with MCP-compliant endpoints for responsible AI analysis",
   "main": "index.js",
   "bin": {
     "framework-rai-mcp": "./bin/cli.js"
@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node run-all-tests.js"
+    "test": "node run-all-tests.js",
+    "mcp-test": "node test-mcp.js"
   },
   "keywords": [
     "ai",
@@ -25,7 +26,7 @@
   "author": "Sebastian Buzdugan",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.4.0",
+    "axios": "^1.9.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -46,5 +47,10 @@
   "bugs": {
     "url": "https://github.com/sebastianbuzdugan/framework-rai-mcp/issues"
   },
-  "homepage": "https://github.com/sebastianbuzdugan/framework-rai-mcp#readme"
+  "homepage": "https://github.com/sebastianbuzdugan/framework-rai-mcp#readme",
+  "smithery": {
+    "type": "jsonrpc",
+    "endpoint": "/mcp",
+    "protocol": "mcp"
+  }
 }
