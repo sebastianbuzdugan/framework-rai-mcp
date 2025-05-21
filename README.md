@@ -69,19 +69,26 @@ The AI-powered features require an OpenAI API key. You can provide it in several
    OPENAI_API_KEY=sk-your-openai-key
    ```
 
-## Development
+### API Endpoints
 
-The project structure is as follows:
+The server exposes the following MCP protocol endpoints:
 
-```
-mcp-server/
-├── bin/                  # CLI scripts
-├── functions/            # Core functionality
-├── index.js              # Main server
-├── smithery.yaml         # Smithery configuration
-├── smithery.json         # MCP protocol definition
-└── package.json          # Package configuration
-```
+- `GET /mcp/manifest`: Get the MCP manifest with available functions
+- `POST /mcp/scan-project`: Scan a project for AI components
+- `POST /mcp/generate-suggestions`: Generate responsible AI suggestions (requires OpenAI API key)
+- `POST /mcp/analyze-model`: Analyze a model file for potential issues (requires OpenAI API key)
+- `POST /mcp/get-documentation`: Get responsible AI documentation
+- `POST /mcp/update-documentation`: Update responsible AI documentation
+
+## Environment Variables
+
+- `PORT`: Port number for the server (default: 3001)
+- `OPENAI_API_KEY`: Your OpenAI API key (required for suggestions and analysis)
+
+## Requirements
+
+- Node.js 14 or higher
+- OpenAI API key (for AI-powered features)
 
 ## License
 

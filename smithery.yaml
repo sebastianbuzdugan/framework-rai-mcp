@@ -11,5 +11,5 @@ configSchema:
 start:
   command: ["node", "index.js"]
   port: 3001
-endpoint: "/"
+endpoint: "/mcp"
 protocol: "mcp" 

@@ -24,8 +24,8 @@ app.use(bodyParser.json());
 // Session storage
 const sessions = new Map();
 
-// MCP JSON-RPC endpoint at root path
-app.post('/', async (req, res) => {
+// MCP JSON-RPC endpoint at /mcp path
+app.post('/mcp', async (req, res) => {
   const { jsonrpc, id, method, params } = req.body;
   
   if (jsonrpc !== '2.0') {
@@ -288,13 +288,6 @@ app.post('/', async (req, res) => {
       }
     });
   }
-});
-
-// For backward compatibility, keep the /mcp endpoint
-app.post('/mcp', (req, res) => {
-  // Forward the request to the root endpoint
-  req.url = '/';
-  app._router.handle(req, res);
 });
 
 // Cleanup old sessions periodically
