@@ -67,6 +67,12 @@ app.post('/', async (req, res) => {
           id,
           result: {
             session_id: sessionId,
+            protocolVersion: '0.3',
+            serverInfo: {
+              name: 'framework-rai-mcp',
+              version: '1.0.2',
+              vendor: 'Sebastian Buzdugan'
+            },
             capabilities: {
               streaming: false
             }
