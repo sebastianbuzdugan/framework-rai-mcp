@@ -9,7 +9,7 @@ configSchema:
       title: "OpenAI API Key"
       description: "Your OpenAI API key for AI-powered suggestions and analysis"
 start:
-  command: ["node", "index.js"]
+  command: ["node", "./index.js"]
   port: 3001
 endpoint: "/mcp"
 protocol: "mcp" 
